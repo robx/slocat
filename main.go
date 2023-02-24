@@ -5,8 +5,11 @@ import (
 	"io"
 	"log"
 	"net"
+	"os"
+	"os/signal"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -28,6 +31,14 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
+	go func(c chan os.Signal) {
+		<-c
+		ln.Close() // this unlinks the socket file
+	}(sigs)
+
 	for {
 		inc, err := ln.Accept()
 		if err != nil {
